@@ -114,8 +114,7 @@ aws ec2 stop-instances --instance-ids i-xxxxxxxxx
 |-------|-------------|
 | EC2 t3.micro (free tier, 1ère année) | ~0.08$ (stockage seul) |
 | EC2 t2.nano 24/7 | ~4.26$ |
-| EC2 t2.nano 24/7 + Elastic IP | ~4.26$ (IP gratuite si instance active) |
-| EC2 stoppé + Elastic IP | ~3.68$ |
+| EC2 t2.nano 2h/jour | ~0.43$ + stockage |
 
 ## Sécurité
 

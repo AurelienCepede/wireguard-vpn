@@ -19,7 +19,7 @@ dnf update -y
 
 # --- Installation des paquets ---
 echo "[2/7] Installation de WireGuard..."
-dnf install -y wireguard-tools qrencode curl iptables
+dnf install -y wireguard-tools qrencode iptables
 
 # --- Chargement du module kernel ---
 modprobe wireguard
