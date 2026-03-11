@@ -6,8 +6,8 @@ Scripts Bash pour déployer un serveur VPN WireGuard sur AWS (EC2 ou Lightsail) 
 
 ```
 .
-├── ec2-suse/
-│   ├── 01-wireguard-install.sh    # Installation initiale (SUSE/EC2)
+├── ec2-amazon-linux/
+│   ├── 01-wireguard-install.sh    # Installation initiale (Amazon Linux 2023/EC2)
 │   └── 02-wireguard-reconnect.sh  # Mise à jour auto de l'IP après redémarrage
 ├── lightsail-ubuntu/
 │   └── lightsail-wireguard-launch-script.sh  # Launch Script Lightsail (Ubuntu 24.04)
@@ -20,17 +20,17 @@ Scripts Bash pour déployer un serveur VPN WireGuard sur AWS (EC2 ou Lightsail) 
 - Une paire de clés SSH (ED25519 recommandé)
 - L'application WireGuard installée sur ton appareil client ([iOS](https://apps.apple.com/app/wireguard/id1441195209) / [Android](https://play.google.com/store/apps/details?id=com.wireguard.android) / [Windows/Mac/Linux](https://www.wireguard.com/install/))
 
-## Option 1 — EC2 avec SUSE Linux
+## Option 1 — EC2 avec Amazon Linux 2023
 
-Setup optimisé pour une instance EC2 à la demande (t2.nano ou t3.micro free tier).
+Setup optimisé pour une instance EC2 à la demande. Amazon Linux est gratuit (pas de surcoût de licence) et nativement optimisé pour AWS.
 
 ### Création de l'instance
 
 1. Dans la console AWS, sélectionne ta **région** en haut à droite
 2. Lance une instance EC2 :
-   - **AMI** : SUSE Linux Enterprise Server
+   - **AMI** : Amazon Linux 2023
    - **Type** : `t3.micro` (free tier) ou `t2.nano` (~0.0058$/h)
-   - **Stockage** : gp3, 1 Go minimum
+   - **Stockage** : gp3
    - **Key Pair** : ED25519
 3. Configure le **Security Group** — ajoute une règle Inbound :
    - Type : `Custom UDP`
@@ -39,16 +39,14 @@ Setup optimisé pour une instance EC2 à la demande (t2.nano ou t3.micro free ti
 
 ### Installation
 
-Connecte-toi en SSH et lance les scripts :
+Depuis ta machine locale, upload et lance les scripts :
 
 ```bash
+# Upload les deux scripts sur l'instance
+scp -i ta-cle.pem ec2-amazon-linux/01-wireguard-install.sh ec2-amazon-linux/02-wireguard-reconnect.sh ec2-user@<IP_PUBLIQUE>:/home/ec2-user/
+
+# Connecte-toi en SSH
 ssh -i ta-cle.pem ec2-user@<IP_PUBLIQUE>
-
-# Upload les deux scripts
-scp -i ta-cle.pem 01-wireguard-install.sh 02-wireguard-reconnect.sh ec2-user@<IP_PUBLIQUE>:/home/ec2-user/
-
-# Copie le script de reconnexion dans /root (nécessaire pour l'install)
-sudo cp 02-wireguard-reconnect.sh /root/
 
 # Lance l'installation
 sudo bash 01-wireguard-install.sh
@@ -56,13 +54,21 @@ sudo bash 01-wireguard-install.sh
 
 Le script affiche un **QR code** (pour mobile) et la **config texte** (pour PC) à la fin de l'installation.
 
-### Après chaque redémarrage de l'instance
-
-La mise à jour de l'IP se fait **automatiquement** au boot via un service systemd. Pour récupérer la nouvelle config :
+**Alternative** — Tu peux aussi cloner le repo directement depuis l'instance :
 
 ```bash
-ssh -i ta-cle.pem ec2-user@<NOUVELLE_IP>
+ssh -i ta-cle.pem ec2-user@<IP_PUBLIQUE>
 
+git clone https://github.com/<ton-username>/wireguard-vpn.git
+cd wireguard-vpn/ec2-amazon-linux
+sudo bash 01-wireguard-install.sh
+```
+
+### Après chaque redémarrage de l'instance
+
+La mise à jour de l'IP se fait **automatiquement** au boot via un service systemd. Pour récupérer la nouvelle config, connecte-toi en SSH et lance :
+
+```bash
 # QR code pour mobile
 sudo wg-reconnect --qr
 

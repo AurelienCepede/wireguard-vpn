@@ -1,0 +1,18 @@
+# Clés privées WireGuard
+*.key
+*.pem
+
+# Configs client (contiennent des clés privées)
+client.conf
+client-wireguard.conf
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Éditeurs
+*.swp
+*.swo
+*~
+.vscode/
+.idea/

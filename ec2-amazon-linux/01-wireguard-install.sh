@@ -1,7 +1,7 @@
 #!/bin/bash
 # =============================================================
 # Script 1 : Installation initiale de WireGuard
-# SUSE Linux (EC2) — À lancer une seule fois (User Data ou SSH)
+# Amazon Linux 2023 (EC2) — À lancer une seule fois (User Data ou SSH)
 # =============================================================
 
 set -e
@@ -15,12 +15,11 @@ DNS="1.1.1.1, 1.0.0.1"
 
 # --- Mise à jour du système ---
 echo "[1/7] Mise à jour du système..."
-zypper refresh
-zypper update -y
+dnf update -y
 
 # --- Installation des paquets ---
 echo "[2/7] Installation de WireGuard..."
-zypper install -y wireguard-tools qrencode curl
+dnf install -y wireguard-tools qrencode curl iptables
 
 # --- Chargement du module kernel ---
 modprobe wireguard
@@ -76,35 +75,14 @@ chmod 600 ${WG_DIR}/${WG_INTERFACE}.conf
 echo "net.ipv4.ip_forward = 1" > /etc/sysctl.d/99-wireguard.conf
 sysctl -p /etc/sysctl.d/99-wireguard.conf
 
-# --- Ouverture du port dans firewalld (si actif) ---
-if systemctl is-active --quiet firewalld; then
-    firewall-cmd --permanent --add-port=${WG_PORT}/udp
-    firewall-cmd --permanent --add-masquerade
-    firewall-cmd --reload
-fi
-
 # --- Démarrage et activation au boot ---
 echo "[7/7] Démarrage de WireGuard..."
 systemctl enable wg-quick@${WG_INTERFACE}
 systemctl start wg-quick@${WG_INTERFACE}
 
-# --- Génération de la config client ---
-cat > ${CLIENT_DIR}/client.conf << EOF
-[Interface]
-PrivateKey = ${CLIENT_PRIVATE_KEY}
-Address = 10.66.66.2/32
-DNS = ${DNS}
-
-[Peer]
-PublicKey = ${SERVER_PUBLIC_KEY}
-PresharedKey = ${CLIENT_PSK}
-Endpoint = ${SERVER_PUBLIC_IP}:${WG_PORT}
-AllowedIPs = 0.0.0.0/0
-PersistentKeepalive = 25
-EOF
-
 # --- Installation du script de reconnexion ---
-cp /root/02-wireguard-reconnect.sh /usr/local/bin/wg-reconnect
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cp "${SCRIPT_DIR}/02-wireguard-reconnect.sh" /usr/local/bin/wg-reconnect
 chmod +x /usr/local/bin/wg-reconnect
 
 # --- Création du service systemd pour mise à jour auto de l'IP au boot ---
@@ -125,6 +103,21 @@ UNIT
 systemctl daemon-reload
 systemctl enable wg-update-ip.service
 
+# --- Génération de la config client ---
+cat > ${CLIENT_DIR}/client.conf << EOF
+[Interface]
+PrivateKey = ${CLIENT_PRIVATE_KEY}
+Address = 10.66.66.2/32
+DNS = ${DNS}
+
+[Peer]
+PublicKey = ${SERVER_PUBLIC_KEY}
+PresharedKey = ${CLIENT_PSK}
+Endpoint = ${SERVER_PUBLIC_IP}:${WG_PORT}
+AllowedIPs = 0.0.0.0/0
+PersistentKeepalive = 25
+EOF
+
 # --- Affichage final ---
 echo ""
 echo "=========================================="
@@ -137,14 +130,12 @@ echo "--- MOBILE : Scanne ce QR Code ---"
 echo ""
 qrencode -t ansiutf8 < ${CLIENT_DIR}/client.conf
 echo ""
-echo "--- PC : Récupère la config ---"
-echo "  Option 1 (SCP) :"
-echo "    scp -i ta-cle.pem ec2-user@${SERVER_PUBLIC_IP}:${CLIENT_DIR}/client.conf ."
-echo ""
-echo "  Option 2 (copier-coller) :"
-echo "    La config est affichée ci-dessous :"
+echo "--- PC : Copie cette config ---"
 echo ""
 cat ${CLIENT_DIR}/client.conf
+echo ""
+echo "--- Ou télécharge via SCP : ---"
+echo "  scp -i ta-cle.pem ec2-user@${SERVER_PUBLIC_IP}:${CLIENT_DIR}/client.conf ."
 echo ""
 echo "=========================================="
 echo "  N'oublie pas d'ouvrir UDP ${WG_PORT}"
