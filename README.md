@@ -1,6 +1,6 @@
 # WireGuard VPN — Scripts d'installation automatique
 
-Scripts Bash pour déployer un serveur VPN WireGuard sur AWS (EC2 ou Lightsail) en quelques minutes.
+Scripts Bash pour déployer un serveur VPN WireGuard sur AWS EC2 en quelques minutes.
 
 ## Contenu du repo
 
@@ -9,18 +9,16 @@ Scripts Bash pour déployer un serveur VPN WireGuard sur AWS (EC2 ou Lightsail) 
 ├── ec2-amazon-linux/
 │   ├── 01-wireguard-install.sh    # Installation initiale (Amazon Linux 2023/EC2)
 │   └── 02-wireguard-reconnect.sh  # Mise à jour auto de l'IP après redémarrage
-├── lightsail-ubuntu/
-│   └── lightsail-wireguard-launch-script.sh  # Launch Script Lightsail (Ubuntu 24.04)
 └── README.md
 ```
 
 ## Prérequis
 
-- Un compte AWS avec accès à EC2 ou Lightsail
+- Un compte AWS avec accès à EC2
 - Une paire de clés SSH (ED25519 recommandé)
 - L'application WireGuard installée sur ton appareil client ([iOS](https://apps.apple.com/app/wireguard/id1441195209) / [Android](https://play.google.com/store/apps/details?id=com.wireguard.android) / [Windows/Mac/Linux](https://www.wireguard.com/install/))
 
-## Option 1 — EC2 avec Amazon Linux 2023
+## EC2 avec Amazon Linux 2023
 
 Setup optimisé pour une instance EC2 à la demande. Amazon Linux est gratuit (pas de surcoût de licence) et nativement optimisé pour AWS.
 
@@ -95,38 +93,6 @@ aws ec2 start-instances --instance-ids i-xxxxxxxxx
 aws ec2 stop-instances --instance-ids i-xxxxxxxxx
 ```
 
-## Option 2 — Lightsail avec Ubuntu 24.04
-
-Setup clé en main pour Lightsail avec installation automatique au lancement.
-
-### Création de l'instance
-
-1. Dans la console Lightsail, clique **Create instance**
-2. Choisis ta région et ta zone
-3. Sélectionne **Ubuntu 24.04 LTS**
-4. Colle le contenu de `lightsail-wireguard-launch-script.sh` dans le champ **Launch Script**
-5. Choisis ton plan (512 Mo suffit)
-6. Crée l'instance
-
-### Configuration réseau
-
-Dans l'onglet **Networking** de ton instance Lightsail, ajoute une règle :
-- **Application** : Custom
-- **Protocol** : UDP
-- **Port** : 51820
-
-### Récupérer la config client
-
-```bash
-ssh user@<IP_LIGHTSAIL>
-
-# QR code pour mobile
-sudo qrencode -t ansiutf8 < /root/client-wireguard.conf
-
-# Config texte pour PC
-sudo cat /root/client-wireguard.conf
-```
-
 ## Configuration des clients
 
 ### Mobile (iOS / Android)
@@ -150,7 +116,6 @@ sudo cat /root/client-wireguard.conf
 | EC2 t2.nano 24/7 | ~4.26$ |
 | EC2 t2.nano 24/7 + Elastic IP | ~4.26$ (IP gratuite si instance active) |
 | EC2 stoppé + Elastic IP | ~3.68$ |
-| Lightsail 512 Mo | 5$/mois fixe |
 
 ## Sécurité
 
